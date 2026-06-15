@@ -7,4 +7,4 @@ Include also ports:
 - OpenAIClient
 - DaDataAPIClient
 
-Write on dotnet core C#+WPF
+Write on dotnet core v10 C#+WPF
