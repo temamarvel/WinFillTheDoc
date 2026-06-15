@@ -23,10 +23,6 @@ internal static class HttpResponseMessageExtensions {
     }
 
     public static string? GetRequestId(this HttpResponseMessage response) {
-        if (response.Headers.TryGetValues("x-request-id", out var values)) {
-            return values.FirstOrDefault();
-        }
-
-        return null;
+        return response.Headers.TryGetValues("x-request-id", out var values) ? values.FirstOrDefault() : null;
     }
 }

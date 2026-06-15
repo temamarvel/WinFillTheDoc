@@ -13,14 +13,14 @@ using FillTheDoc.OpenAIClient.Models;
 namespace FillTheDoc.OpenAIClient;
 
 public sealed class OpenAIClient : IOpenAIClient {
-    private static readonly JsonSerializerOptions JsonOptions = new() {
+    readonly static JsonSerializerOptions JsonOptions = new() {
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private readonly HttpClient httpClient;
-    private readonly IOpenAIApiKeyProvider apiKeyProvider;
-    private readonly OpenAIClientOptions options;
+    readonly HttpClient httpClient;
+    readonly IOpenAIApiKeyProvider apiKeyProvider;
+    readonly OpenAIClientOptions options;
 
     public OpenAIClient(
         HttpClient httpClient,
@@ -30,9 +30,7 @@ public sealed class OpenAIClient : IOpenAIClient {
         this.apiKeyProvider = apiKeyProvider;
         this.options = options;
 
-        if (this.httpClient.BaseAddress is null) {
-            this.httpClient.BaseAddress = options.BaseUrl;
-        }
+        this.httpClient.BaseAddress ??= options.BaseUrl;
 
         this.httpClient.Timeout = options.Timeout;
     }
@@ -55,11 +53,7 @@ public sealed class OpenAIClient : IOpenAIClient {
         try {
             var value = JsonSerializer.Deserialize<T>(raw.Value, JsonOptions);
 
-            if (value is null) {
-                throw new OpenAIDecodingException($"Failed to decode {typeof(T).Name}: response is null.");
-            }
-
-            return new OpenAIResult<T>(value, raw.Status);
+            return value is null ? throw new OpenAIDecodingException($"Failed to decode {typeof(T).Name}: response is null.") : new OpenAIResult<T>(value, raw.Status);
         }
         catch (JsonException ex) {
             throw new OpenAIDecodingException(
@@ -68,7 +62,7 @@ public sealed class OpenAIClient : IOpenAIClient {
         }
     }
 
-    private async Task<OpenAIResult<string>> RequestCoreAsync(
+    async Task<OpenAIResult<string>> RequestCoreAsync(
         string system,
         string user,
         double temperature,
@@ -174,7 +168,7 @@ public sealed class OpenAIClient : IOpenAIClient {
         }
     }
 
-    private HttpRequestMessage BuildRequest(string requestJson, string apiKey) {
+    HttpRequestMessage BuildRequest(string requestJson, string apiKey) {
         var endpoint = new Uri(options.BaseUrl, "chat/completions");
         var request = new HttpRequestMessage(HttpMethod.Post, endpoint) {
             Content = new StringContent(requestJson, Encoding.UTF8, "application/json")
@@ -189,11 +183,11 @@ public sealed class OpenAIClient : IOpenAIClient {
         return request;
     }
 
-    private bool ShouldRetry(int statusCode, int attempt) =>
+    bool ShouldRetry(int statusCode, int attempt) =>
         attempt <= options.MaxRetries &&
         (statusCode == (int)HttpStatusCode.TooManyRequests || statusCode is >= 500 and <= 599);
 
-    private static Task DelayAsync(int attempt, TimeSpan? retryAfter, CancellationToken cancellationToken) =>
+    static Task DelayAsync(int attempt, TimeSpan? retryAfter, CancellationToken cancellationToken) =>
         Task.Delay(RetryDelay.Calculate(attempt, retryAfter), cancellationToken);
 }
 
