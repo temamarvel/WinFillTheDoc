@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="OpenAIClient.csproj" />
+  <Project Path="..\OpenAIClient.Tests\OpenAIClient.Tests.csproj" />
+</Solution>
