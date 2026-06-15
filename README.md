@@ -6,3 +6,5 @@ Include also ports:
 - DocxUtils
 - OpenAIClient
 - DaDataAPIClient
+
+Write on dotnet core C#+WPF
