@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/FillTheDoc.DaDataClient/FillTheDoc.DaDataClient.csproj" />
+  <Project Path="tests/FillTheDoc.DaDataClient.Tests/FillTheDoc.DaDataClient.Tests.csproj" />
+</Solution>
