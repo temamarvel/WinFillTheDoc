@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <Deterministic>true</Deterministic>
+    <IsPackable>true</IsPackable>
+    <RootNamespace>DocUtils</RootNamespace>
+    <AssemblyName>DocUtils</AssemblyName>
+    <PackageId>DocUtils</PackageId>
+  </PropertyGroup>
+
+</Project>
