@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using WinFillTheDoc.Application.Navigation;
 using WinFillTheDoc.Application.Services;
 using WinFillTheDoc.Domain.Placeholders;
@@ -7,19 +8,95 @@ namespace WinFillTheDoc.Application.ViewModels;
 
 public sealed class ConfirmationViewModel : ObservableObject
 {
+    private readonly DocumentWorkflowState _workflowState;
+    private readonly IFileDialogService _fileDialogService;
+    private readonly IDocxTemplateService _templateService;
     private readonly INavigationService _navigationService;
+    private string? _generationStatus;
+    private bool _isGenerating;
 
-    public ConfirmationViewModel(DocumentWorkflowState workflowState, INavigationService navigationService)
+    public ConfirmationViewModel(
+        DocumentWorkflowState workflowState,
+        PlaceholderValueAssembler valueAssembler,
+        IPlaceholderCatalog placeholderCatalog,
+        IFileDialogService fileDialogService,
+        IDocxTemplateService templateService,
+        INavigationService navigationService)
     {
+        _workflowState = workflowState;
+        _fileDialogService = fileDialogService;
+        _templateService = templateService;
         _navigationService = navigationService;
         TemplateName = workflowState.TemplateFile?.FileName ?? "Шаблон не выбран";
-        FieldValues = new ObservableCollection<DocumentFieldValue>(workflowState.FieldValues);
-        StartOverCommand = new RelayCommand(() => _navigationService.NavigateTo<DocumentSetupViewModel>());
+        workflowState.ResolvedValues = valueAssembler.Assemble(workflowState.FieldValues);
+        FieldValues = new ObservableCollection<ResolvedPlaceholderValue>(workflowState.ResolvedValues
+            .OrderBy(x => placeholderCatalog.GetAll().FirstOrDefault(d => d.Key == x.Key)?.Order ?? int.MaxValue)
+            .ThenBy(x => x.Key, StringComparer.Ordinal)
+            .Select(x => new ResolvedPlaceholderValue(
+                placeholderCatalog.GetAll().FirstOrDefault(d => d.Key == x.Key)?.Title ?? x.Key,
+                x.Value)));
+
+        StartOverCommand = new RelayCommand(StartOver);
         EditCommand = new RelayCommand(() => _navigationService.NavigateTo<DocumentDataFormViewModel>());
+        GenerateCommand = new AsyncRelayCommand(GenerateDocumentAsync, () => !IsGenerating && workflowState.TemplateInspection?.CanGenerate == true);
     }
 
     public string TemplateName { get; }
-    public ObservableCollection<DocumentFieldValue> FieldValues { get; }
+    public ObservableCollection<ResolvedPlaceholderValue> FieldValues { get; }
+    public string? GenerationStatus
+    {
+        get => _generationStatus;
+        private set => SetProperty(ref _generationStatus, value);
+    }
+
+    public bool IsGenerating
+    {
+        get => _isGenerating;
+        private set
+        {
+            if (!SetProperty(ref _isGenerating, value)) return;
+            GenerateCommand.RaiseCanExecuteChanged();
+        }
+    }
+
     public RelayCommand StartOverCommand { get; }
     public RelayCommand EditCommand { get; }
+    public AsyncRelayCommand GenerateCommand { get; }
+
+    private async Task GenerateDocumentAsync()
+    {
+        var templatePath = _workflowState.TemplateFile?.FullPath;
+        if (templatePath is null)
+        {
+            GenerationStatus = "Шаблон не выбран.";
+            return;
+        }
+
+        var defaultName = $"{Path.GetFileNameWithoutExtension(templatePath)}_filled.docx";
+        var outputPath = _fileDialogService.SelectOutputFile(defaultName);
+        if (outputPath is null) return;
+
+        IsGenerating = true;
+        GenerationStatus = "Создание документа...";
+        try
+        {
+            var result = await Task.Run(() => _templateService.Generate(templatePath, outputPath, _workflowState.ResolvedValues));
+            GenerationStatus = $"Документ сохранен: {result.OutputPath}. Замен выполнено: {result.ReplacementsCount}.";
+        }
+        catch (Exception exception)
+        {
+            GenerationStatus = $"Не удалось создать документ: {exception.Message}";
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
+    }
+
+    private void StartOver()
+    {
+        _workflowState.FieldValues = [];
+        _workflowState.ResolvedValues = new Dictionary<string, string>();
+        _navigationService.NavigateTo<DocumentSetupViewModel>();
+    }
 }

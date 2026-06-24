@@ -1,24 +1,35 @@
 <UserControl x:Class="WinFillTheDoc.Views.ConfirmationView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <TextBlock Text="Данные собраны" FontSize="22" FontWeight="SemiBold" Foreground="#18211D" />
-        <TextBlock Grid.Row="1" Text="{Binding TemplateName, StringFormat=Следующим этапом эти значения будут подставлены в шаблон: {0}}" TextWrapping="Wrap" Foreground="#5B665E" Margin="0,8,0,20" />
+        <TextBlock Grid.Row="1" Text="{Binding TemplateName, StringFormat=Значения для шаблона: {0}}" TextWrapping="Wrap" Foreground="#5B665E" Margin="0,8,0,20" />
         <DataGrid Grid.Row="2" ItemsSource="{Binding FieldValues}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Поле" Binding="{Binding Title}" Width="*" />
                 <DataGridTextColumn Header="Значение" Binding="{Binding Value}" Width="2*" />
             </DataGrid.Columns>
         </DataGrid>
-        <DockPanel Grid.Row="3" Margin="0,20,0,0">
+        <StackPanel Grid.Row="3" Margin="0,16,0,0">
+            <TextBlock Text="{Binding GenerationStatus}" TextWrapping="Wrap" Foreground="#1F6B4F" />
+            <ProgressBar IsIndeterminate="True" Height="4" Margin="0,8,0,0" Visibility="{Binding IsGenerating, Converter={StaticResource BooleanToVisibilityConverter}}" />
+        </StackPanel>
+        <DockPanel Grid.Row="4" Margin="0,20,0,0">
             <Button Content="Начать заново" Command="{Binding StartOverCommand}" Padding="20,9" />
-            <Button Content="Редактировать" Command="{Binding EditCommand}" DockPanel.Dock="Right" Padding="20,9" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
+                <Button Content="Редактировать" Command="{Binding EditCommand}" Padding="20,9" Margin="0,0,10,0" />
+                <Button Content="Создать DOCX" Command="{Binding GenerateCommand}" Padding="20,9" Background="#1F6B4F" Foreground="White" BorderThickness="0" />
+            </StackPanel>
         </DockPanel>
     </Grid>
 </UserControl>

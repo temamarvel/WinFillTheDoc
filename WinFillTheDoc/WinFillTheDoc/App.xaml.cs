@@ -17,7 +17,10 @@ public partial class App : System.Windows.Application
         var services = new ServiceCollection();
 
         services.AddSingleton<IFileDialogService, FileDialogService>();
+        services.AddSingleton<IDocxTemplateService, DocxTemplateService>();
         services.AddSingleton<IPlaceholderCatalog, PlaceholderRegistry>();
+        services.AddSingleton<TimeProvider>(TimeProvider.System);
+        services.AddSingleton<PlaceholderValueAssembler>();
         services.AddSingleton<DocumentWorkflowState>();
         services.AddSingleton<INavigationService, NavigationService>();
 

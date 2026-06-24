@@ -20,6 +20,18 @@
                     <TextBlock Text="{Binding TemplateFileName}" TextTrimming="CharacterEllipsis" />
                 </Border>
             </DockPanel>
+            <TextBlock Text="{Binding TemplateStatusMessage}" Foreground="#B42318" TextWrapping="Wrap" Margin="0,-14,0,16">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="#1F6B4F" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding TemplateHasError}" Value="True">
+                                <Setter Property="Foreground" Value="#B42318" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
 
             <TextBlock Text="Файл с данными" FontWeight="SemiBold" />
             <DockPanel Margin="0,8,0,0">
