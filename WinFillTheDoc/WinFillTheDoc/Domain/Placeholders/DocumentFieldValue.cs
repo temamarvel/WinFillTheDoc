@@ -6,17 +6,23 @@ namespace WinFillTheDoc.Domain.Placeholders;
 public sealed class DocumentFieldValue : INotifyPropertyChanged
 {
     private string _value = string.Empty;
-    private string? _error;
+    private FieldIssue? _issue;
 
-    public DocumentFieldValue(PlaceholderDefinition definition)
+    public DocumentFieldValue(PlaceholderDescriptor descriptor, ChoiceInputConfiguration? choiceConfiguration = null)
     {
-        Definition = definition;
+        Descriptor = descriptor;
+        ChoiceConfiguration = choiceConfiguration;
     }
 
-    public PlaceholderDefinition Definition { get; }
-    public string Key => Definition.Key;
-    public string Title => Definition.Title;
-    public bool IsRequired => Definition.IsRequired;
+    public PlaceholderDescriptor Descriptor { get; }
+    public ChoiceInputConfiguration? ChoiceConfiguration { get; }
+    public string Key => Descriptor.Key;
+    public string Title => Descriptor.Title;
+    public string Description => Descriptor.Description;
+    public bool IsRequired => Descriptor.IsRequired;
+    public bool IsChoice => Descriptor.InputKind == PlaceholderInputKind.Choice;
+    public string SourceLabel => Descriptor.ValueSource?.GetLabel() ?? string.Empty;
+    public IReadOnlyList<string> Options => ChoiceConfiguration?.Options ?? [];
 
     public string Value
     {
@@ -25,28 +31,34 @@ public sealed class DocumentFieldValue : INotifyPropertyChanged
         {
             if (_value == value) return;
             _value = value;
+            Issue = null;
             OnPropertyChanged();
         }
     }
 
-    public string? Error
+    public FieldIssue? Issue
     {
-        get => _error;
+        get => _issue;
         private set
         {
-            if (_error == value) return;
-            _error = value;
+            if (_issue == value) return;
+            _issue = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(HasError));
+            OnPropertyChanged(nameof(IssueText));
+            OnPropertyChanged(nameof(IsError));
+            OnPropertyChanged(nameof(IsWarning));
         }
     }
 
-    public bool HasError => !string.IsNullOrWhiteSpace(Error);
+    public string? IssueText => Issue?.Text;
+    public bool IsError => Issue?.Severity == FieldIssueSeverity.Error;
+    public bool IsWarning => Issue?.Severity == FieldIssueSeverity.Warning;
 
-    public bool Validate()
+    public bool NormalizeAndValidate(PlaceholderFieldPolicy policy)
     {
-        Error = IsRequired && string.IsNullOrWhiteSpace(Value) ? "Поле обязательно для заполнения." : null;
-        return !HasError;
+        Value = policy.Normalize(Value);
+        Issue = policy.Validate(Value);
+        return !IsError;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
