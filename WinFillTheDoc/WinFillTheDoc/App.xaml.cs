@@ -35,6 +35,8 @@ public partial class App : System.Windows.Application
             serviceProvider => new DaDataTokenProvider(serviceProvider.GetRequiredService<IDaDataTokenStore>()));
         services.AddSingleton<ICustomPlaceholderRepository, JsonCustomPlaceholderRepository>();
         services.AddSingleton<CustomPlaceholderValidator>();
+        services.AddSingleton<IDocumentDataCopyStringBuilder, DocumentDataCopyStringBuilder>();
+        services.AddSingleton<IClipboardService, WpfClipboardService>();
         services.AddSingleton<IPlaceholderCatalog, PlaceholderRegistry>();
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddSingleton<PlaceholderValueAssembler>();

@@ -11,6 +11,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <TextBlock Text="Данные собраны" FontSize="22" FontWeight="SemiBold" Foreground="#18211D" />
         <TextBlock Grid.Row="1" Text="{Binding TemplateName, StringFormat=Значения для шаблона: {0}}" TextWrapping="Wrap" Foreground="#5B665E" Margin="0,8,0,20" />
@@ -21,10 +22,20 @@
             </DataGrid.Columns>
         </DataGrid>
         <StackPanel Grid.Row="3" Margin="0,16,0,0">
+            <TextBlock Text="Строка для Google Sheets" FontWeight="SemiBold" Foreground="#18211D" Margin="0,0,0,6" />
+            <Border Background="#F4F1EB" CornerRadius="8" Padding="12">
+                <TextBox Text="{Binding CopyStringPreview}" IsReadOnly="True" BorderThickness="0" Background="Transparent" TextWrapping="NoWrap" FontFamily="Consolas" FontSize="12" />
+            </Border>
+            <DockPanel Margin="0,8,0,0">
+                <Button DockPanel.Dock="Right" Content="Скопировать строку" Command="{Binding CopyStringCommand}" Padding="16,7" />
+                <TextBlock Text="{Binding CopyStatus}" Foreground="#1F6B4F" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DockPanel>
+        </StackPanel>
+        <StackPanel Grid.Row="4" Margin="0,16,0,0">
             <TextBlock Text="{Binding GenerationStatus}" TextWrapping="Wrap" Foreground="#1F6B4F" />
             <ProgressBar IsIndeterminate="True" Height="4" Margin="0,8,0,0" Visibility="{Binding IsGenerating, Converter={StaticResource BooleanToVisibilityConverter}}" />
         </StackPanel>
-        <DockPanel Grid.Row="4" Margin="0,20,0,0">
+        <DockPanel Grid.Row="5" Margin="0,20,0,0">
             <Button Content="Начать заново" Command="{Binding StartOverCommand}" Padding="20,9" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
                 <Button Content="Редактировать" Command="{Binding EditCommand}" Padding="20,9" Margin="0,0,10,0" />

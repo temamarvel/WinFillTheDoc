@@ -11,8 +11,10 @@ public sealed class ConfirmationViewModel : ObservableObject
     private readonly DocumentWorkflowState _workflowState;
     private readonly IFileDialogService _fileDialogService;
     private readonly IDocxTemplateService _templateService;
+    private readonly IClipboardService _clipboardService;
     private readonly INavigationService _navigationService;
     private string? _generationStatus;
+    private string? _copyStatus;
     private bool _isGenerating;
 
     public ConfirmationViewModel(
@@ -21,14 +23,19 @@ public sealed class ConfirmationViewModel : ObservableObject
         IPlaceholderCatalog placeholderCatalog,
         IFileDialogService fileDialogService,
         IDocxTemplateService templateService,
+        IDocumentDataCopyStringBuilder copyStringBuilder,
+        IClipboardService clipboardService,
         INavigationService navigationService)
     {
         _workflowState = workflowState;
         _fileDialogService = fileDialogService;
         _templateService = templateService;
+        _clipboardService = clipboardService;
         _navigationService = navigationService;
         TemplateName = workflowState.TemplateFile?.FileName ?? "Шаблон не выбран";
         workflowState.ResolvedValues = valueAssembler.Assemble(workflowState.FieldValues);
+        CopyString = copyStringBuilder.BuildRow(workflowState.ResolvedValues);
+        CopyStringPreview = CopyString.Replace("\t", " | ");
         FieldValues = new ObservableCollection<ResolvedPlaceholderValue>(workflowState.ResolvedValues
             .OrderBy(x => placeholderCatalog.GetAll().FirstOrDefault(d => d.Key == x.Key)?.Order ?? int.MaxValue)
             .ThenBy(x => x.Key, StringComparer.Ordinal)
@@ -38,15 +45,24 @@ public sealed class ConfirmationViewModel : ObservableObject
 
         StartOverCommand = new RelayCommand(StartOver);
         EditCommand = new RelayCommand(() => _navigationService.NavigateTo<DocumentDataFormViewModel>());
+        CopyStringCommand = new RelayCommand(CopyStringToClipboard, () => !string.IsNullOrWhiteSpace(CopyString));
         GenerateCommand = new AsyncRelayCommand(GenerateDocumentAsync, () => !IsGenerating && workflowState.TemplateInspection?.CanGenerate == true);
     }
 
     public string TemplateName { get; }
     public ObservableCollection<ResolvedPlaceholderValue> FieldValues { get; }
+    public string CopyString { get; }
+    public string CopyStringPreview { get; }
     public string? GenerationStatus
     {
         get => _generationStatus;
         private set => SetProperty(ref _generationStatus, value);
+    }
+
+    public string? CopyStatus
+    {
+        get => _copyStatus;
+        private set => SetProperty(ref _copyStatus, value);
     }
 
     public bool IsGenerating
@@ -61,6 +77,7 @@ public sealed class ConfirmationViewModel : ObservableObject
 
     public RelayCommand StartOverCommand { get; }
     public RelayCommand EditCommand { get; }
+    public RelayCommand CopyStringCommand { get; }
     public AsyncRelayCommand GenerateCommand { get; }
 
     private async Task GenerateDocumentAsync()
@@ -81,6 +98,7 @@ public sealed class ConfirmationViewModel : ObservableObject
         try
         {
             var result = await Task.Run(() => _templateService.Generate(templatePath, outputPath, _workflowState.ResolvedValues));
+            CopyStringToClipboard("Строка для Google Sheets скопирована после генерации.");
             GenerationStatus = $"Документ сохранен: {result.OutputPath}. Замен выполнено: {result.ReplacementsCount}.";
         }
         catch (Exception exception)
@@ -91,6 +109,16 @@ public sealed class ConfirmationViewModel : ObservableObject
         {
             IsGenerating = false;
         }
+    }
+
+    private void CopyStringToClipboard() => CopyStringToClipboard("Строка для Google Sheets скопирована.");
+
+    private void CopyStringToClipboard(string status)
+    {
+        if (string.IsNullOrWhiteSpace(CopyString)) return;
+
+        _clipboardService.SetText(CopyString);
+        CopyStatus = status;
     }
 
     private void StartOver()
