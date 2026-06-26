@@ -28,6 +28,14 @@
                 <TextBlock Text="{Binding ExtractionMessage}" Foreground="#5B665E" TextWrapping="Wrap" VerticalAlignment="Center" />
             </DockPanel>
             <ProgressBar IsIndeterminate="True" Height="4" Margin="0,8,0,0" Visibility="{Binding IsExtracting, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            <DockPanel Margin="0,12,0,0">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Проверить по ФНС" Command="{Binding CheckReferenceCommand}" Padding="16,7" Margin="0,0,8,0" />
+                    <Button Content="Заменить на данные ФНС" Command="{Binding ApplyReferenceValuesCommand}" Padding="16,7" />
+                </StackPanel>
+                <TextBlock Text="{Binding ReferenceValidationMessage}" Foreground="#5B665E" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DockPanel>
+            <ProgressBar IsIndeterminate="True" Height="4" Margin="0,8,0,0" Visibility="{Binding IsCheckingReference, Converter={StaticResource BooleanToVisibilityConverter}}" />
             <TextBlock Text="{Binding ValidationMessage}" Foreground="#B42318" Margin="0,8,0,0" />
         </StackPanel>
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">

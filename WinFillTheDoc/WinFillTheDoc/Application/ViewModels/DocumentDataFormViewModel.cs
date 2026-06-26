@@ -12,17 +12,24 @@ public sealed class DocumentDataFormViewModel : ObservableObject
     private readonly IDocumentTextExtractor _textExtractor;
     private readonly IRequisitesExtractionService _requisitesExtractionService;
     private readonly IApiKeyStore _apiKeyStore;
+    private readonly IDaDataTokenStore _daDataTokenStore;
+    private readonly ICompanyReferenceValidator _companyReferenceValidator;
     private readonly DocumentWorkflowState _workflowState;
     private readonly INavigationService _navigationService;
     private string? _validationMessage;
     private string? _extractionMessage;
+    private string? _referenceValidationMessage;
     private bool _isExtracting;
+    private bool _isCheckingReference;
+    private CompanyReferenceResolution _lastReferenceResolution = CompanyReferenceResolution.Empty;
 
     public DocumentDataFormViewModel(
         IPlaceholderCatalog placeholderCatalog,
         IDocumentTextExtractor textExtractor,
         IRequisitesExtractionService requisitesExtractionService,
         IApiKeyStore apiKeyStore,
+        IDaDataTokenStore daDataTokenStore,
+        ICompanyReferenceValidator companyReferenceValidator,
         DocumentWorkflowState workflowState,
         INavigationService navigationService)
     {
@@ -30,6 +37,8 @@ public sealed class DocumentDataFormViewModel : ObservableObject
         _textExtractor = textExtractor;
         _requisitesExtractionService = requisitesExtractionService;
         _apiKeyStore = apiKeyStore;
+        _daDataTokenStore = daDataTokenStore;
+        _companyReferenceValidator = companyReferenceValidator;
         _workflowState = workflowState;
         _navigationService = navigationService;
         Fields = workflowState.FieldValues.Count > 0
@@ -46,7 +55,12 @@ public sealed class DocumentDataFormViewModel : ObservableObject
         BackCommand = new RelayCommand(GoBack);
         ConfirmCommand = new RelayCommand(Confirm);
         RefillFromSourceCommand = new AsyncRelayCommand(LoadExtractedValuesAsync, CanExtractFromSource);
+        CheckReferenceCommand = new AsyncRelayCommand(CheckReferenceAsync, CanCheckReference);
+        ApplyReferenceValuesCommand = new RelayCommand(ApplyReferenceValues, CanApplyReferenceValues);
         ExtractionMessage = workflowState.ExtractionStatusMessage;
+        ReferenceValidationMessage = daDataTokenStore.HasToken
+            ? "Сверку с ФНС можно выполнить после заполнения ИНН или ОГРН."
+            : "DaData API-ключ не задан. Сверка с ФНС недоступна.";
 
         if (workflowState.FieldValues.Count == 0 && workflowState.ExtractedValues.Count > 0)
             ApplyExtractedValues(workflowState.ExtractedValues);
@@ -76,6 +90,22 @@ public sealed class DocumentDataFormViewModel : ObservableObject
         }
     }
 
+    public string? ReferenceValidationMessage
+    {
+        get => _referenceValidationMessage;
+        private set => SetProperty(ref _referenceValidationMessage, value);
+    }
+
+    public bool IsCheckingReference
+    {
+        get => _isCheckingReference;
+        private set
+        {
+            if (!SetProperty(ref _isCheckingReference, value)) return;
+            CheckReferenceCommand.RaiseCanExecuteChanged();
+        }
+    }
+
     public string? ValidationMessage
     {
         get => _validationMessage;
@@ -85,6 +115,8 @@ public sealed class DocumentDataFormViewModel : ObservableObject
     public RelayCommand BackCommand { get; }
     public RelayCommand ConfirmCommand { get; }
     public AsyncRelayCommand RefillFromSourceCommand { get; }
+    public AsyncRelayCommand CheckReferenceCommand { get; }
+    public RelayCommand ApplyReferenceValuesCommand { get; }
 
     private async Task LoadExtractedValuesAsync()
     {
@@ -145,6 +177,57 @@ public sealed class DocumentDataFormViewModel : ObservableObject
         _navigationService.NavigateTo<ConfirmationViewModel>();
     }
 
+    private async Task CheckReferenceAsync()
+    {
+        if (!_daDataTokenStore.HasToken)
+        {
+            ReferenceValidationMessage = "DaData API-ключ не задан. Вернитесь назад и укажите ключ.";
+            return;
+        }
+
+        IsCheckingReference = true;
+        try
+        {
+            ClearReferenceIssues();
+            var resolution = await _companyReferenceValidator.ResolveAsync(CurrentValues());
+            _lastReferenceResolution = resolution;
+            ApplyReferenceIssues(resolution.Issues);
+
+            ReferenceValidationMessage = resolution.ReferenceValues.Count == 0
+                ? "Компания не найдена в DaData/ФНС или сервис временно недоступен."
+                : resolution.Issues.Count == 0
+                    ? "Сверка выполнена. Расхождений с ФНС не найдено."
+                    : $"Сверка выполнена. Найдено расхождений: {resolution.Issues.Count}.";
+            ApplyReferenceValuesCommand.RaiseCanExecuteChanged();
+        }
+        catch (Exception exception)
+        {
+            ReferenceValidationMessage = $"Не удалось выполнить сверку с ФНС: {exception.Message}";
+        }
+        finally
+        {
+            IsCheckingReference = false;
+        }
+    }
+
+    private void ApplyReferenceValues()
+    {
+        var companyKeys = Fields
+            .Where(x => x.Descriptor.Section == PlaceholderSection.Company)
+            .Select(x => x.Key)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var field in Fields.Where(x => companyKeys.Contains(x.Key)))
+        {
+            if (!_lastReferenceResolution.ReferenceValues.TryGetValue(field.Key, out var value)) continue;
+
+            field.ApplyReferenceValue(value, _placeholderCatalog.GetFieldPolicy(field.Key));
+        }
+
+        ReferenceValidationMessage = "Официальные данные ФНС применены к полям компании. Проверьте значения перед подтверждением.";
+        ApplyReferenceValuesCommand.RaiseCanExecuteChanged();
+    }
+
     private void GoBack()
     {
         _workflowState.FieldValues = Fields.ToList();
@@ -155,9 +238,18 @@ public sealed class DocumentDataFormViewModel : ObservableObject
     {
         if (e.PropertyName == nameof(DocumentFieldValue.Value) && ValidationMessage is not null)
             ValidationMessage = null;
+
+        if (e.PropertyName == nameof(DocumentFieldValue.Value))
+        {
+            _lastReferenceResolution = CompanyReferenceResolution.Empty;
+            ApplyReferenceValuesCommand.RaiseCanExecuteChanged();
+            CheckReferenceCommand.RaiseCanExecuteChanged();
+        }
     }
 
     private bool CanExtractFromSource() => _workflowState.SourceFile is not null && !IsExtracting;
+    private bool CanCheckReference() => _daDataTokenStore.HasToken && !IsCheckingReference && HasReferenceLookupValue();
+    private bool CanApplyReferenceValues() => _lastReferenceResolution.ReferenceValues.Count > 0;
 
     private void ApplyExtractedValues(IReadOnlyDictionary<string, string> extractedValues)
     {
@@ -168,6 +260,23 @@ public sealed class DocumentDataFormViewModel : ObservableObject
             var policy = _placeholderCatalog.GetFieldPolicy(field.Key);
             field.Value = policy.Normalize(value);
         }
+    }
+
+    private IReadOnlyDictionary<string, string> CurrentValues() =>
+        Fields.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
+
+    private bool HasReferenceLookupValue() =>
+        Fields.Any(x => (x.Key == "inn" || x.Key == "ogrn") && !string.IsNullOrWhiteSpace(x.Value));
+
+    private void ApplyReferenceIssues(IReadOnlyDictionary<string, FieldReferenceIssue> issues)
+    {
+        foreach (var field in Fields)
+            field.ApplyReferenceIssue(issues.TryGetValue(field.Key, out var issue) ? issue.Message : null);
+    }
+
+    private void ClearReferenceIssues()
+    {
+        foreach (var field in Fields) field.ApplyReferenceIssue(null);
     }
 
     private void SetExtractionMessage(string message)

@@ -7,6 +7,7 @@ public sealed class DocumentFieldValue : INotifyPropertyChanged
 {
     private string _value = string.Empty;
     private FieldIssue? _issue;
+    private FieldIssue? _referenceIssue;
 
     public DocumentFieldValue(PlaceholderDescriptor descriptor, ChoiceInputConfiguration? choiceConfiguration = null)
     {
@@ -50,15 +51,37 @@ public sealed class DocumentFieldValue : INotifyPropertyChanged
         }
     }
 
-    public string? IssueText => Issue?.Text;
+    public string? IssueText => Issue?.Text ?? ReferenceIssue?.Text;
     public bool IsError => Issue?.Severity == FieldIssueSeverity.Error;
-    public bool IsWarning => Issue?.Severity == FieldIssueSeverity.Warning;
+    public bool IsWarning => Issue?.Severity == FieldIssueSeverity.Warning || ReferenceIssue is not null;
+
+    public FieldIssue? ReferenceIssue
+    {
+        get => _referenceIssue;
+        private set
+        {
+            if (_referenceIssue == value) return;
+            _referenceIssue = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IssueText));
+            OnPropertyChanged(nameof(IsWarning));
+        }
+    }
 
     public bool NormalizeAndValidate(PlaceholderFieldPolicy policy)
     {
         Value = policy.Normalize(Value);
         Issue = policy.Validate(Value);
         return !IsError;
+    }
+
+    public void ApplyReferenceIssue(string? message) =>
+        ReferenceIssue = string.IsNullOrWhiteSpace(message) ? null : FieldIssue.Warning(message);
+
+    public void ApplyReferenceValue(string value, PlaceholderFieldPolicy policy)
+    {
+        Value = policy.Normalize(value);
+        ReferenceIssue = FieldIssue.Warning("Заменено на данные ФНС.");
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

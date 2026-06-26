@@ -1,4 +1,5 @@
 using System.Windows;
+using FillTheDoc.DaDataClient;
 using FillTheDoc.OpenAIClient;
 using FillTheDoc.OpenAIClient.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,10 +23,16 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IDocxTemplateService, DocxTemplateService>();
         services.AddSingleton<IDocumentTextExtractor, DocumentTextExtractor>();
         services.AddSingleton<IApiKeyStore, JsonFileApiKeyStore>();
+        services.AddSingleton<IDaDataTokenStore>(serviceProvider => (JsonFileApiKeyStore)serviceProvider.GetRequiredService<IApiKeyStore>());
         services.AddSingleton<IRequisitesExtractionService, OpenAIRequisitesExtractionService>();
         services.AddOpenAIClient(
             options => options.Model = "gpt-4o-mini",
             serviceProvider => new OpenAIApiKeyProvider(serviceProvider.GetRequiredService<IApiKeyStore>()));
+        services.AddSingleton<ICompanyReferenceService, DaDataCompanyReferenceService>();
+        services.AddSingleton<ICompanyReferenceValidator, CompanyReferenceValidator>();
+        services.AddDaDataClient(
+            _ => { },
+            serviceProvider => new DaDataTokenProvider(serviceProvider.GetRequiredService<IDaDataTokenStore>()));
         services.AddSingleton<IPlaceholderCatalog, PlaceholderRegistry>();
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddSingleton<PlaceholderValueAssembler>();

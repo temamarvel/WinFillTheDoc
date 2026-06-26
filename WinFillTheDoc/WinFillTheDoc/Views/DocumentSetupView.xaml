@@ -44,7 +44,11 @@
 
             <TextBlock Text="OpenAI API-ключ" FontWeight="SemiBold" />
             <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}" Padding="9" Margin="0,8,0,0" />
-            <TextBlock Text="{Binding ApiKeyStatusMessage}" FontSize="12" Foreground="#718077" TextWrapping="Wrap" Margin="0,8,0,0" />
+            <TextBlock Text="{Binding ApiKeyStatusMessage}" FontSize="12" Foreground="#718077" TextWrapping="Wrap" Margin="0,8,0,14" />
+
+            <TextBlock Text="DaData API-ключ" FontWeight="SemiBold" />
+            <TextBox Text="{Binding DaDataToken, UpdateSourceTrigger=PropertyChanged}" Padding="9" Margin="0,8,0,0" />
+            <TextBlock Text="{Binding DaDataTokenStatusMessage}" FontSize="12" Foreground="#718077" TextWrapping="Wrap" Margin="0,8,0,0" />
         </StackPanel>
 
         <Button Grid.Row="4" Content="Продолжить" Command="{Binding ContinueCommand}" HorizontalAlignment="Right" Padding="24,10" Background="#1F6B4F" Foreground="White" BorderThickness="0" />

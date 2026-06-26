@@ -4,7 +4,7 @@ using WinFillTheDoc.Application.Services;
 
 namespace WinFillTheDoc.Infrastructure.Services;
 
-public sealed class JsonFileApiKeyStore : IApiKeyStore
+public sealed class JsonFileApiKeyStore : IApiKeyStore, IDaDataTokenStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly string _settingsPath;
@@ -19,6 +19,7 @@ public sealed class JsonFileApiKeyStore : IApiKeyStore
     }
 
     public bool HasApiKey => !string.IsNullOrWhiteSpace(GetApiKey());
+    public bool HasToken => !string.IsNullOrWhiteSpace(GetToken());
 
     public string? GetApiKey()
     {
@@ -26,8 +27,21 @@ public sealed class JsonFileApiKeyStore : IApiKeyStore
 
         try
         {
-            var json = File.ReadAllText(_settingsPath);
-            return JsonSerializer.Deserialize<SettingsFile>(json)?.OpenAI?.ApiKey;
+            return ReadSettings().OpenAI?.ApiKey;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public string? GetToken()
+    {
+        if (!File.Exists(_settingsPath)) return null;
+
+        try
+        {
+            return ReadSettings().DaData?.ApiKey;
         }
         catch
         {
@@ -42,7 +56,18 @@ public sealed class JsonFileApiKeyStore : IApiKeyStore
         var directory = Path.GetDirectoryName(_settingsPath);
         if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
 
-        var settings = new SettingsFile(new OpenAISettings(apiKey.Trim()));
+        var settings = ReadSettings() with { OpenAI = new ApiKeySettings(apiKey.Trim()) };
+        File.WriteAllText(_settingsPath, JsonSerializer.Serialize(settings, JsonOptions));
+    }
+
+    public void SaveToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return;
+
+        var directory = Path.GetDirectoryName(_settingsPath);
+        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+
+        var settings = ReadSettings() with { DaData = new ApiKeySettings(token.Trim()) };
         File.WriteAllText(_settingsPath, JsonSerializer.Serialize(settings, JsonOptions));
     }
 
@@ -52,6 +77,14 @@ public sealed class JsonFileApiKeyStore : IApiKeyStore
         return Path.Combine(appData, "WinFillTheDoc", "settings.json");
     }
 
-    private sealed record SettingsFile(OpenAISettings? OpenAI);
-    private sealed record OpenAISettings(string? ApiKey);
+    private SettingsFile ReadSettings()
+    {
+        if (!File.Exists(_settingsPath)) return new SettingsFile(null, null);
+
+        var json = File.ReadAllText(_settingsPath);
+        return JsonSerializer.Deserialize<SettingsFile>(json) ?? new SettingsFile(null, null);
+    }
+
+    private sealed record SettingsFile(ApiKeySettings? OpenAI, ApiKeySettings? DaData);
+    private sealed record ApiKeySettings(string? ApiKey);
 }

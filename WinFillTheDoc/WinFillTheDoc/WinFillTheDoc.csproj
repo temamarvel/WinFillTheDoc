@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\..\DaDataAPIClient\src\FillTheDoc.DaDataClient\FillTheDoc.DaDataClient.csproj" />
     <ProjectReference Include="..\..\DocUtils\DocUtils.csproj" />
     <ProjectReference Include="..\..\OpenAIClient\OpenAIClient.csproj" />
   </ItemGroup>

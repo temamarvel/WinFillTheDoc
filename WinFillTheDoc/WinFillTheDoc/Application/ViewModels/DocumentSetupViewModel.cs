@@ -11,13 +11,16 @@ public sealed class DocumentSetupViewModel : ObservableObject
     private readonly IFileDialogService _fileDialogService;
     private readonly IDocxTemplateService _templateService;
     private readonly IApiKeyStore _apiKeyStore;
+    private readonly IDaDataTokenStore _daDataTokenStore;
     private readonly IPlaceholderCatalog _placeholderCatalog;
     private readonly DocumentWorkflowState _workflowState;
     private readonly INavigationService _navigationService;
     private string? _templatePath;
     private string? _sourcePath;
     private string _apiKey = string.Empty;
+    private string _daDataToken = string.Empty;
     private string? _apiKeyStatusMessage;
+    private string? _daDataTokenStatusMessage;
     private string? _templateStatusMessage;
     private bool _templateHasError;
 
@@ -25,6 +28,7 @@ public sealed class DocumentSetupViewModel : ObservableObject
         IFileDialogService fileDialogService,
         IDocxTemplateService templateService,
         IApiKeyStore apiKeyStore,
+        IDaDataTokenStore daDataTokenStore,
         IPlaceholderCatalog placeholderCatalog,
         DocumentWorkflowState workflowState,
         INavigationService navigationService)
@@ -32,6 +36,7 @@ public sealed class DocumentSetupViewModel : ObservableObject
         _fileDialogService = fileDialogService;
         _templateService = templateService;
         _apiKeyStore = apiKeyStore;
+        _daDataTokenStore = daDataTokenStore;
         _placeholderCatalog = placeholderCatalog;
         _workflowState = workflowState;
         _navigationService = navigationService;
@@ -44,6 +49,9 @@ public sealed class DocumentSetupViewModel : ObservableObject
         ApiKeyStatusMessage = apiKeyStore.HasApiKey
             ? "OpenAI API-ключ сохранён. Оставьте поле пустым, чтобы не менять его."
             : "API-ключ не задан. Автозаполнение будет пропущено, форму можно заполнить вручную.";
+        DaDataTokenStatusMessage = daDataTokenStore.HasToken
+            ? "DaData API-ключ сохранён. Оставьте поле пустым, чтобы не менять его."
+            : "DaData API-ключ не задан. Сверка с ФНС будет недоступна.";
     }
 
     public string? TemplatePath
@@ -77,6 +85,18 @@ public sealed class DocumentSetupViewModel : ObservableObject
     {
         get => _apiKeyStatusMessage;
         private set => SetProperty(ref _apiKeyStatusMessage, value);
+    }
+
+    public string DaDataToken
+    {
+        get => _daDataToken;
+        set => SetProperty(ref _daDataToken, value);
+    }
+
+    public string? DaDataTokenStatusMessage
+    {
+        get => _daDataTokenStatusMessage;
+        private set => SetProperty(ref _daDataTokenStatusMessage, value);
     }
 
     public string? TemplateStatusMessage
@@ -153,6 +173,13 @@ public sealed class DocumentSetupViewModel : ObservableObject
             _apiKeyStore.SaveApiKey(ApiKey);
             ApiKey = string.Empty;
             ApiKeyStatusMessage = "OpenAI API-ключ сохранён.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(DaDataToken))
+        {
+            _daDataTokenStore.SaveToken(DaDataToken);
+            DaDataToken = string.Empty;
+            DaDataTokenStatusMessage = "DaData API-ключ сохранён.";
         }
 
         _workflowState.TemplateFile = new DocumentFile(TemplatePath!);
