@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using UglyToad.PdfPig;
 using WinFillTheDoc.Application.Services;
 
 namespace WinFillTheDoc.Infrastructure.Services;
@@ -27,7 +28,7 @@ public sealed partial class DocumentTextExtractor : IDocumentTextExtractor
             {
                 "txt" => await File.ReadAllTextAsync(filePath, cancellationToken),
                 "docx" => ExtractDocx(filePath),
-                "pdf" => UnsupportedPdf(notes, out needsOcr),
+                "pdf" => ExtractPdf(filePath, notes, out needsOcr),
                 _ => Unsupported(extension, errors),
             };
 
@@ -35,7 +36,7 @@ public sealed partial class DocumentTextExtractor : IDocumentTextExtractor
             {
                 "txt" => "plain-text",
                 "docx" => "docx-xml",
-                "pdf" => "unsupported-pdf",
+                "pdf" => "pdf-text-layer",
                 _ => "unsupported",
             };
         }
@@ -75,11 +76,19 @@ public sealed partial class DocumentTextExtractor : IDocumentTextExtractor
         return builder.ToString();
     }
 
-    private static string UnsupportedPdf(List<string> notes, out bool needsOcr)
+    private static string ExtractPdf(string filePath, List<string> notes, out bool needsOcr)
     {
-        needsOcr = true;
-        notes.Add("PDF extraction is not implemented in this stage. Fill the form manually or use TXT/DOCX requisites.");
-        return string.Empty;
+        using var document = PdfDocument.Open(filePath);
+        var pages = document.GetPages()
+            .Select(page => page.Text.Trim())
+            .Where(text => text.Length > 0)
+            .ToList();
+
+        var text = string.Join(Environment.NewLine + Environment.NewLine, pages);
+        needsOcr = string.IsNullOrWhiteSpace(text);
+        notes.Add($"PDF selectable text extracted: {!needsOcr}.");
+        if (needsOcr) notes.Add("Likely scanned PDF; OCR recommended.");
+        return text;
     }
 
     private static string Unsupported(string extension, List<string> errors)

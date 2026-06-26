@@ -40,7 +40,7 @@
                     <TextBlock Text="{Binding SourceFileName}" TextTrimming="CharacterEllipsis" />
                 </Border>
             </DockPanel>
-            <TextBlock Text="Поддерживаются TXT и DOCX. PDF пока откроет ручной режим без автозаполнения." FontSize="12" Foreground="#718077" Margin="0,8,0,18" />
+            <TextBlock Text="Поддерживаются TXT, DOCX и текстовые PDF. Для сканов PDF понадобится OCR в отдельном этапе." FontSize="12" Foreground="#718077" Margin="0,8,0,18" />
 
             <TextBlock Text="OpenAI API-ключ" FontWeight="SemiBold" />
             <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}" Padding="9" Margin="0,8,0,0" />
