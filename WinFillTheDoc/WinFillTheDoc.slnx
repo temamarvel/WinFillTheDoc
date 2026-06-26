@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="../OpenAIClient/OpenAIClient.csproj" />
   <Project Path="WinFillTheDoc/WinFillTheDoc.csproj" />
   <Project Path="WinFillTheDoc.Tests/WinFillTheDoc.Tests.csproj" />
 </Solution>

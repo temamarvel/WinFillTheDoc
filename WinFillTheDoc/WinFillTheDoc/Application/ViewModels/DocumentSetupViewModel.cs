@@ -10,23 +10,28 @@ public sealed class DocumentSetupViewModel : ObservableObject
 {
     private readonly IFileDialogService _fileDialogService;
     private readonly IDocxTemplateService _templateService;
+    private readonly IApiKeyStore _apiKeyStore;
     private readonly IPlaceholderCatalog _placeholderCatalog;
     private readonly DocumentWorkflowState _workflowState;
     private readonly INavigationService _navigationService;
     private string? _templatePath;
     private string? _sourcePath;
+    private string _apiKey = string.Empty;
+    private string? _apiKeyStatusMessage;
     private string? _templateStatusMessage;
     private bool _templateHasError;
 
     public DocumentSetupViewModel(
         IFileDialogService fileDialogService,
         IDocxTemplateService templateService,
+        IApiKeyStore apiKeyStore,
         IPlaceholderCatalog placeholderCatalog,
         DocumentWorkflowState workflowState,
         INavigationService navigationService)
     {
         _fileDialogService = fileDialogService;
         _templateService = templateService;
+        _apiKeyStore = apiKeyStore;
         _placeholderCatalog = placeholderCatalog;
         _workflowState = workflowState;
         _navigationService = navigationService;
@@ -36,6 +41,9 @@ public sealed class DocumentSetupViewModel : ObservableObject
         SelectTemplateCommand = new RelayCommand(SelectTemplate);
         SelectSourceCommand = new RelayCommand(SelectSource);
         ContinueCommand = new RelayCommand(Continue, CanContinue);
+        ApiKeyStatusMessage = apiKeyStore.HasApiKey
+            ? "OpenAI API-ключ сохранён. Оставьте поле пустым, чтобы не менять его."
+            : "API-ключ не задан. Автозаполнение будет пропущено, форму можно заполнить вручную.";
     }
 
     public string? TemplatePath
@@ -57,6 +65,18 @@ public sealed class DocumentSetupViewModel : ObservableObject
             if (!SetProperty(ref _sourcePath, value)) return;
             OnPropertyChanged(nameof(SourceFileName));
         }
+    }
+
+    public string ApiKey
+    {
+        get => _apiKey;
+        set => SetProperty(ref _apiKey, value);
+    }
+
+    public string? ApiKeyStatusMessage
+    {
+        get => _apiKeyStatusMessage;
+        private set => SetProperty(ref _apiKeyStatusMessage, value);
     }
 
     public string? TemplateStatusMessage
@@ -93,7 +113,11 @@ public sealed class DocumentSetupViewModel : ObservableObject
     private void SelectSource()
     {
         var filePath = _fileDialogService.SelectSourceFile();
-        if (filePath is not null) SourcePath = filePath;
+        if (filePath is null) return;
+
+        SourcePath = filePath;
+        _workflowState.ExtractedValues = new Dictionary<string, string>();
+        _workflowState.ExtractionStatusMessage = null;
     }
 
     private void InspectTemplate(string filePath)
@@ -124,6 +148,13 @@ public sealed class DocumentSetupViewModel : ObservableObject
 
     private void Continue()
     {
+        if (!string.IsNullOrWhiteSpace(ApiKey))
+        {
+            _apiKeyStore.SaveApiKey(ApiKey);
+            ApiKey = string.Empty;
+            ApiKeyStatusMessage = "OpenAI API-ключ сохранён.";
+        }
+
         _workflowState.TemplateFile = new DocumentFile(TemplatePath!);
         _workflowState.SourceFile = SourcePath is null ? null : new DocumentFile(SourcePath);
         _navigationService.NavigateTo<DocumentDataFormViewModel>();

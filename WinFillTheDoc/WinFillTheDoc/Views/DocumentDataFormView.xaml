@@ -20,8 +20,16 @@
         <StackPanel>
             <TextBlock Text="Проверьте данные" FontSize="22" FontWeight="SemiBold" Foreground="#18211D" />
             <TextBlock Text="{Binding TemplateName, StringFormat=Шаблон: {0}}" Foreground="#5B665E" Margin="0,8,0,0" />
+            <TextBlock Text="{Binding SourceName, StringFormat=Реквизиты: {0}}" Foreground="#5B665E" Margin="0,4,0,0" />
         </StackPanel>
-        <TextBlock Grid.Row="1" Text="{Binding ValidationMessage}" Foreground="#B42318" Margin="0,20,0,8" />
+        <StackPanel Grid.Row="1" Margin="0,20,0,8">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Заполнить из файла" Command="{Binding RefillFromSourceCommand}" Padding="16,7" />
+                <TextBlock Text="{Binding ExtractionMessage}" Foreground="#5B665E" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DockPanel>
+            <ProgressBar IsIndeterminate="True" Height="4" Margin="0,8,0,0" Visibility="{Binding IsExtracting, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            <TextBlock Text="{Binding ValidationMessage}" Foreground="#B42318" Margin="0,8,0,0" />
+        </StackPanel>
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Sections}">
                 <ItemsControl.ItemTemplate>

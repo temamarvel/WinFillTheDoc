@@ -10,7 +10,7 @@ public sealed class FileDialogService : IFileDialogService
         "Выберите DOCX-шаблон");
 
     public string? SelectSourceFile() => SelectFile(
-        "Поддерживаемые файлы|*.doc;*.docx;*.pdf;*.xls;*.xlsx;*.txt|Все файлы|*.*",
+        "Поддерживаемые файлы|*.txt;*.docx;*.pdf|Все файлы|*.*",
         "Выберите файл с данными");
 
     public string? SelectOutputFile(string suggestedFileName)

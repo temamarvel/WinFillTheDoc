@@ -1,4 +1,6 @@
 using System.Windows;
+using FillTheDoc.OpenAIClient;
+using FillTheDoc.OpenAIClient.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using WinFillTheDoc.Application.Navigation;
 using WinFillTheDoc.Application.Services;
@@ -18,6 +20,12 @@ public partial class App : System.Windows.Application
 
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IDocxTemplateService, DocxTemplateService>();
+        services.AddSingleton<IDocumentTextExtractor, DocumentTextExtractor>();
+        services.AddSingleton<IApiKeyStore, JsonFileApiKeyStore>();
+        services.AddSingleton<IRequisitesExtractionService, OpenAIRequisitesExtractionService>();
+        services.AddOpenAIClient(
+            options => options.Model = "gpt-4o-mini",
+            serviceProvider => new OpenAIApiKeyProvider(serviceProvider.GetRequiredService<IApiKeyStore>()));
         services.AddSingleton<IPlaceholderCatalog, PlaceholderRegistry>();
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddSingleton<PlaceholderValueAssembler>();
