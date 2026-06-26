@@ -8,8 +8,9 @@ public static class PromptBuilder
     public static string BuildSystem(IReadOnlyList<PlaceholderDescriptor> schemaDescriptors)
     {
         var schemaKeys = string.Join(", ", schemaDescriptors.Select(x => $"\"{x.Key}\""));
+        var builtInKeys = PlaceholderRegistry.GetBuiltInKeys();
         var customRules = schemaDescriptors
-            .Where(x => false)
+            .Where(x => !builtInKeys.Contains(x.Key))
             .Select(x => $"- {x.Key}: {x.Description}")
             .ToList();
 

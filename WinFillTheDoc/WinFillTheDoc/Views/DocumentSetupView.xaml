@@ -52,5 +52,6 @@
         </StackPanel>
 
         <Button Grid.Row="4" Content="Продолжить" Command="{Binding ContinueCommand}" HorizontalAlignment="Right" Padding="24,10" Background="#1F6B4F" Foreground="White" BorderThickness="0" />
+        <Button Grid.Row="4" Content="Библиотека плейсхолдеров" Command="{Binding OpenPlaceholderLibraryCommand}" HorizontalAlignment="Left" Padding="18,10" />
     </Grid>
 </UserControl>

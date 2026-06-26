@@ -46,6 +46,7 @@ public sealed class DocumentSetupViewModel : ObservableObject
         SelectTemplateCommand = new RelayCommand(SelectTemplate);
         SelectSourceCommand = new RelayCommand(SelectSource);
         ContinueCommand = new RelayCommand(Continue, CanContinue);
+        OpenPlaceholderLibraryCommand = new RelayCommand(() => _navigationService.NavigateTo<PlaceholderLibraryViewModel>());
         ApiKeyStatusMessage = apiKeyStore.HasApiKey
             ? "OpenAI API-ключ сохранён. Оставьте поле пустым, чтобы не менять его."
             : "API-ключ не задан. Автозаполнение будет пропущено, форму можно заполнить вручную.";
@@ -119,6 +120,7 @@ public sealed class DocumentSetupViewModel : ObservableObject
     public RelayCommand SelectTemplateCommand { get; }
     public RelayCommand SelectSourceCommand { get; }
     public RelayCommand ContinueCommand { get; }
+    public RelayCommand OpenPlaceholderLibraryCommand { get; }
 
     private void SelectTemplate()
     {

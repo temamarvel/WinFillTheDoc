@@ -33,6 +33,8 @@ public partial class App : System.Windows.Application
         services.AddDaDataClient(
             _ => { },
             serviceProvider => new DaDataTokenProvider(serviceProvider.GetRequiredService<IDaDataTokenStore>()));
+        services.AddSingleton<ICustomPlaceholderRepository, JsonCustomPlaceholderRepository>();
+        services.AddSingleton<CustomPlaceholderValidator>();
         services.AddSingleton<IPlaceholderCatalog, PlaceholderRegistry>();
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddSingleton<PlaceholderValueAssembler>();
@@ -43,6 +45,7 @@ public partial class App : System.Windows.Application
         services.AddTransient<DocumentSetupViewModel>();
         services.AddTransient<DocumentDataFormViewModel>();
         services.AddTransient<ConfirmationViewModel>();
+        services.AddTransient<PlaceholderLibraryViewModel>();
 
         _serviceProvider = services.BuildServiceProvider();
 

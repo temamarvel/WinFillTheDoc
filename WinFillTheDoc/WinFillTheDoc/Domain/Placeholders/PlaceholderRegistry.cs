@@ -1,10 +1,12 @@
+using WinFillTheDoc.Application.Services;
+
 namespace WinFillTheDoc.Domain.Placeholders;
 
 public sealed class PlaceholderRegistry : IPlaceholderCatalog
 {
     private static readonly ChoiceInputConfiguration PaymentMethodChoices = new(["счет", "сбп"]);
 
-    private readonly IReadOnlyList<PlaceholderDescriptor> _descriptors =
+    private static readonly IReadOnlyList<PlaceholderDescriptor> BuiltInDescriptors =
     [
         new("company_name", "Название компании", "Краткое наименование без правовой формы.", PlaceholderSection.Company, 10, PlaceholderValueSource.Extracted, PlaceholderInputKind.Text, true, "Ромашка"),
         new("legal_form", "Правовая форма", "Аббревиатура правовой формы: ООО, АО, ИП и т.д.", PlaceholderSection.Company, 20, PlaceholderValueSource.Extracted, PlaceholderInputKind.Text, true, "ООО"),
@@ -30,9 +32,11 @@ public sealed class PlaceholderRegistry : IPlaceholderCatalog
     ];
 
     private readonly Dictionary<string, PlaceholderFieldPolicy> _policies;
+    private readonly ICustomPlaceholderRepository? _customPlaceholderRepository;
 
-    public PlaceholderRegistry()
+    public PlaceholderRegistry(ICustomPlaceholderRepository? customPlaceholderRepository = null)
     {
+        _customPlaceholderRepository = customPlaceholderRepository;
         _policies = new(StringComparer.Ordinal)
         {
             ["company_name"] = new(validate: FieldValidators.NonEmpty),
@@ -53,13 +57,56 @@ public sealed class PlaceholderRegistry : IPlaceholderCatalog
         };
     }
 
-    public IReadOnlyList<PlaceholderDescriptor> GetAll() => _descriptors;
+    public IReadOnlyList<PlaceholderDescriptor> GetAll() => BuiltInDescriptors
+        .Concat(GetCustomDefinitions().Select(ToDescriptor))
+        .OrderBy(x => x.Section)
+        .ThenBy(x => x.Order)
+        .ThenBy(x => x.Key)
+        .ToList();
 
-    public IReadOnlyList<PlaceholderDescriptor> GetInputDescriptors() => _descriptors
+    public IReadOnlyList<PlaceholderDescriptor> GetInputDescriptors() => GetAll()
         .Where(x => x.AcceptsUserInput).OrderBy(x => x.Section).ThenBy(x => x.Order).ToList();
 
-    public PlaceholderFieldPolicy GetFieldPolicy(string key) =>
-        _policies.TryGetValue(key, out var policy) ? policy : new PlaceholderFieldPolicy();
+    public PlaceholderFieldPolicy GetFieldPolicy(string key)
+    {
+        if (_policies.TryGetValue(key, out var policy)) return policy;
 
-    public ChoiceInputConfiguration? GetChoiceConfiguration(string key) => key == "payment_method" ? PaymentMethodChoices : null;
+        var custom = GetCustomDefinitions().FirstOrDefault(x => string.Equals(x.Key, key, StringComparison.Ordinal));
+        if (custom is null) return new PlaceholderFieldPolicy();
+
+        if (custom.InputKind == PlaceholderInputKind.Choice)
+        {
+            var configuration = new ChoiceInputConfiguration(custom.Options, !custom.IsRequired);
+            return new PlaceholderFieldPolicy(validate: value => FieldValidators.Choice(value, configuration));
+        }
+
+        return custom.IsRequired
+            ? new PlaceholderFieldPolicy(validate: FieldValidators.NonEmpty)
+            : new PlaceholderFieldPolicy();
+    }
+
+    public ChoiceInputConfiguration? GetChoiceConfiguration(string key)
+    {
+        if (key == "payment_method") return PaymentMethodChoices;
+
+        var custom = GetCustomDefinitions()
+            .FirstOrDefault(x => string.Equals(x.Key, key, StringComparison.Ordinal) && x.InputKind == PlaceholderInputKind.Choice);
+        return custom is null ? null : new ChoiceInputConfiguration(custom.Options, !custom.IsRequired);
+    }
+
+    public static IReadOnlySet<string> GetBuiltInKeys() =>
+        BuiltInDescriptors.Select(x => x.Key).ToHashSet(StringComparer.Ordinal);
+
+    private IReadOnlyList<CustomPlaceholderDefinition> GetCustomDefinitions() =>
+        _customPlaceholderRepository?.GetAll() ?? [];
+
+    private static PlaceholderDescriptor ToDescriptor(CustomPlaceholderDefinition definition) => new(
+        definition.Key,
+        definition.Title,
+        definition.Description,
+        definition.Section,
+        10_000,
+        definition.ValueSource,
+        definition.InputKind,
+        definition.IsRequired);
 }
