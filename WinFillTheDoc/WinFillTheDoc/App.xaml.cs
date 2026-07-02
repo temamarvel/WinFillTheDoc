@@ -37,6 +37,10 @@ public partial class App : System.Windows.Application
         services.AddSingleton<CustomPlaceholderValidator>();
         services.AddSingleton<IDocumentDataCopyStringBuilder, DocumentDataCopyStringBuilder>();
         services.AddSingleton<IClipboardService, WpfClipboardService>();
+        services.AddSingleton<IAppVersionProvider, AssemblyAppVersionProvider>();
+        services.AddSingleton<IAppUpdateChecker, AppUpdateChecker>();
+        services.AddSingleton<IExternalLinkService, WindowsExternalLinkService>();
+        services.AddHttpClient<IGitHubReleaseClient, GitHubReleaseClient>();
         services.AddSingleton<IPlaceholderCatalog, PlaceholderRegistry>();
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddSingleton<PlaceholderValueAssembler>();

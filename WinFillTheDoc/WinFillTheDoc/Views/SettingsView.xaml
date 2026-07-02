@@ -28,7 +28,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Background="#F4F1EB" CornerRadius="10" Padding="18">
+                <Border Background="#F4F1EB" CornerRadius="10" Padding="18" Margin="0,0,0,18">
                     <StackPanel>
                         <TextBlock Text="DaData" FontSize="17" FontWeight="SemiBold" Foreground="#18211D" />
                         <TextBlock Text="{Binding DaDataStatus}" Foreground="#5B665E" Margin="0,6,0,12" />
@@ -38,6 +38,21 @@
                             <Button Content="Сохранить DaData ключ" Command="{Binding SaveDaDataCommand}" Padding="16,8" Margin="0,0,8,0" Background="#1F6B4F" Foreground="White" BorderThickness="0" />
                             <Button Content="Удалить" Command="{Binding DeleteDaDataCommand}" Padding="16,8" />
                         </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#F4F1EB" CornerRadius="10" Padding="18">
+                    <StackPanel>
+                        <TextBlock Text="Обновления" FontSize="17" FontWeight="SemiBold" Foreground="#18211D" />
+                        <TextBlock Text="{Binding CurrentVersionText, StringFormat=Текущая версия: {0}}" Foreground="#5B665E" Margin="0,6,0,12" />
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Проверить обновления" Command="{Binding CheckUpdatesCommand}" Padding="16,8" Margin="0,0,8,0" Background="#1F6B4F" Foreground="White" BorderThickness="0" />
+                            <Button Content="Открыть релиз" Command="{Binding OpenReleaseCommand}" Padding="16,8" Margin="0,0,8,0" />
+                            <Button Content="Скачать" Command="{Binding DownloadUpdateCommand}" Padding="16,8" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding UpdateStatus}" Foreground="#5B665E" TextWrapping="Wrap" Margin="0,12,0,0" />
+                        <TextBlock Text="{Binding UpdateTitle}" FontWeight="SemiBold" Foreground="#18211D" TextWrapping="Wrap" Margin="0,8,0,0" />
+                        <TextBox Text="{Binding UpdateNotes}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" BorderThickness="0" Background="Transparent" Margin="0,8,0,0" MaxHeight="120" />
                     </StackPanel>
                 </Border>
 
