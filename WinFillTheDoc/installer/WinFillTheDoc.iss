@@ -1,5 +1,5 @@
 #define MyAppName "WinFillTheDoc"
-#define MyAppVersion "1.0.1-beta"
+#define MyAppVersion "1.0.3-beta"
 #define MyAppPublisher "FillTheDoc"
 #define MyAppExeName "WinFillTheDoc.exe"
 #define SourceDir "..\release\publish"
