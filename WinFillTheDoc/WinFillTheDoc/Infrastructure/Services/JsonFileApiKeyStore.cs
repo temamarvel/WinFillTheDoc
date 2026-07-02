@@ -8,14 +8,20 @@ public sealed class JsonFileApiKeyStore : IApiKeyStore, IDaDataTokenStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly string _settingsPath;
+    private readonly ISecretProtector _secretProtector;
 
-    public JsonFileApiKeyStore() : this(GetDefaultSettingsPath())
+    public JsonFileApiKeyStore() : this(GetDefaultSettingsPath(), new DpapiSecretProtector())
     {
     }
 
-    public JsonFileApiKeyStore(string settingsPath)
+    public JsonFileApiKeyStore(string settingsPath) : this(settingsPath, new DpapiSecretProtector())
+    {
+    }
+
+    public JsonFileApiKeyStore(string settingsPath, ISecretProtector secretProtector)
     {
         _settingsPath = settingsPath;
+        _secretProtector = secretProtector;
     }
 
     public bool HasApiKey => !string.IsNullOrWhiteSpace(GetApiKey());
@@ -23,11 +29,13 @@ public sealed class JsonFileApiKeyStore : IApiKeyStore, IDaDataTokenStore
 
     public string? GetApiKey()
     {
-        if (!File.Exists(_settingsPath)) return null;
-
         try
         {
-            return ReadSettings().OpenAI?.ApiKey;
+            var settings = ReadSettings();
+            var value = ReadSecret(settings.OpenAI);
+            if (settings.OpenAI?.ApiKey is not null)
+                WriteSettings(settings with { OpenAI = value is null ? null : new ApiKeySettings(null, _secretProtector.Protect(value)) });
+            return value;
         }
         catch
         {
@@ -37,11 +45,13 @@ public sealed class JsonFileApiKeyStore : IApiKeyStore, IDaDataTokenStore
 
     public string? GetToken()
     {
-        if (!File.Exists(_settingsPath)) return null;
-
         try
         {
-            return ReadSettings().DaData?.ApiKey;
+            var settings = ReadSettings();
+            var value = ReadSecret(settings.DaData);
+            if (settings.DaData?.ApiKey is not null)
+                WriteSettings(settings with { DaData = value is null ? null : new ApiKeySettings(null, _secretProtector.Protect(value)) });
+            return value;
         }
         catch
         {
@@ -53,22 +63,28 @@ public sealed class JsonFileApiKeyStore : IApiKeyStore, IDaDataTokenStore
     {
         if (string.IsNullOrWhiteSpace(apiKey)) return;
 
-        var directory = Path.GetDirectoryName(_settingsPath);
-        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
-
-        var settings = ReadSettings() with { OpenAI = new ApiKeySettings(apiKey.Trim()) };
-        File.WriteAllText(_settingsPath, JsonSerializer.Serialize(settings, JsonOptions));
+        var settings = ReadSettings() with { OpenAI = new ApiKeySettings(null, _secretProtector.Protect(apiKey.Trim())) };
+        WriteSettings(settings);
     }
 
     public void SaveToken(string token)
     {
         if (string.IsNullOrWhiteSpace(token)) return;
 
-        var directory = Path.GetDirectoryName(_settingsPath);
-        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+        var settings = ReadSettings() with { DaData = new ApiKeySettings(null, _secretProtector.Protect(token.Trim())) };
+        WriteSettings(settings);
+    }
 
-        var settings = ReadSettings() with { DaData = new ApiKeySettings(token.Trim()) };
-        File.WriteAllText(_settingsPath, JsonSerializer.Serialize(settings, JsonOptions));
+    public void DeleteApiKey()
+    {
+        var settings = ReadSettings() with { OpenAI = null };
+        WriteSettings(settings);
+    }
+
+    public void DeleteToken()
+    {
+        var settings = ReadSettings() with { DaData = null };
+        WriteSettings(settings);
     }
 
     private static string GetDefaultSettingsPath()
@@ -85,6 +101,22 @@ public sealed class JsonFileApiKeyStore : IApiKeyStore, IDaDataTokenStore
         return JsonSerializer.Deserialize<SettingsFile>(json) ?? new SettingsFile(null, null);
     }
 
+    private void WriteSettings(SettingsFile settings)
+    {
+        var directory = Path.GetDirectoryName(_settingsPath);
+        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+
+        File.WriteAllText(_settingsPath, JsonSerializer.Serialize(settings, JsonOptions));
+    }
+
+    private string? ReadSecret(ApiKeySettings? settings)
+    {
+        if (!string.IsNullOrWhiteSpace(settings?.ProtectedApiKey))
+            return _secretProtector.Unprotect(settings.ProtectedApiKey);
+
+        return string.IsNullOrWhiteSpace(settings?.ApiKey) ? null : settings.ApiKey.Trim();
+    }
+
     private sealed record SettingsFile(ApiKeySettings? OpenAI, ApiKeySettings? DaData);
-    private sealed record ApiKeySettings(string? ApiKey);
+    private sealed record ApiKeySettings(string? ApiKey, string? ProtectedApiKey);
 }

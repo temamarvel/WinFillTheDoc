@@ -10,15 +10,11 @@ public sealed class DocumentSetupViewModel : ObservableObject
 {
     private readonly IFileDialogService _fileDialogService;
     private readonly IDocxTemplateService _templateService;
-    private readonly IApiKeyStore _apiKeyStore;
-    private readonly IDaDataTokenStore _daDataTokenStore;
     private readonly IPlaceholderCatalog _placeholderCatalog;
     private readonly DocumentWorkflowState _workflowState;
     private readonly INavigationService _navigationService;
     private string? _templatePath;
     private string? _sourcePath;
-    private string _apiKey = string.Empty;
-    private string _daDataToken = string.Empty;
     private string? _apiKeyStatusMessage;
     private string? _daDataTokenStatusMessage;
     private string? _templateStatusMessage;
@@ -35,8 +31,6 @@ public sealed class DocumentSetupViewModel : ObservableObject
     {
         _fileDialogService = fileDialogService;
         _templateService = templateService;
-        _apiKeyStore = apiKeyStore;
-        _daDataTokenStore = daDataTokenStore;
         _placeholderCatalog = placeholderCatalog;
         _workflowState = workflowState;
         _navigationService = navigationService;
@@ -47,12 +41,13 @@ public sealed class DocumentSetupViewModel : ObservableObject
         SelectSourceCommand = new RelayCommand(SelectSource);
         ContinueCommand = new RelayCommand(Continue, CanContinue);
         OpenPlaceholderLibraryCommand = new RelayCommand(() => _navigationService.NavigateTo<PlaceholderLibraryViewModel>());
+        OpenSettingsCommand = new RelayCommand(() => _navigationService.NavigateTo<SettingsViewModel>());
         ApiKeyStatusMessage = apiKeyStore.HasApiKey
-            ? "OpenAI API-ключ сохранён. Оставьте поле пустым, чтобы не менять его."
-            : "API-ключ не задан. Автозаполнение будет пропущено, форму можно заполнить вручную.";
+            ? "OpenAI ключ задан: автозаполнение доступно."
+            : "OpenAI ключ не задан: автозаполнение будет пропущено.";
         DaDataTokenStatusMessage = daDataTokenStore.HasToken
-            ? "DaData API-ключ сохранён. Оставьте поле пустым, чтобы не менять его."
-            : "DaData API-ключ не задан. Сверка с ФНС будет недоступна.";
+            ? "DaData ключ задан: сверка ФНС доступна."
+            : "DaData ключ не задан: сверка ФНС недоступна.";
     }
 
     public string? TemplatePath
@@ -76,22 +71,10 @@ public sealed class DocumentSetupViewModel : ObservableObject
         }
     }
 
-    public string ApiKey
-    {
-        get => _apiKey;
-        set => SetProperty(ref _apiKey, value);
-    }
-
     public string? ApiKeyStatusMessage
     {
         get => _apiKeyStatusMessage;
         private set => SetProperty(ref _apiKeyStatusMessage, value);
-    }
-
-    public string DaDataToken
-    {
-        get => _daDataToken;
-        set => SetProperty(ref _daDataToken, value);
     }
 
     public string? DaDataTokenStatusMessage
@@ -121,6 +104,7 @@ public sealed class DocumentSetupViewModel : ObservableObject
     public RelayCommand SelectSourceCommand { get; }
     public RelayCommand ContinueCommand { get; }
     public RelayCommand OpenPlaceholderLibraryCommand { get; }
+    public RelayCommand OpenSettingsCommand { get; }
 
     private void SelectTemplate()
     {
@@ -170,20 +154,6 @@ public sealed class DocumentSetupViewModel : ObservableObject
 
     private void Continue()
     {
-        if (!string.IsNullOrWhiteSpace(ApiKey))
-        {
-            _apiKeyStore.SaveApiKey(ApiKey);
-            ApiKey = string.Empty;
-            ApiKeyStatusMessage = "OpenAI API-ключ сохранён.";
-        }
-
-        if (!string.IsNullOrWhiteSpace(DaDataToken))
-        {
-            _daDataTokenStore.SaveToken(DaDataToken);
-            DaDataToken = string.Empty;
-            DaDataTokenStatusMessage = "DaData API-ключ сохранён.";
-        }
-
         _workflowState.TemplateFile = new DocumentFile(TemplatePath!);
         _workflowState.SourceFile = SourcePath is null ? null : new DocumentFile(SourcePath);
         _navigationService.NavigateTo<DocumentDataFormViewModel>();

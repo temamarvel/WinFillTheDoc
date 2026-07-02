@@ -5,4 +5,5 @@ public interface IDaDataTokenStore
     bool HasToken { get; }
     string? GetToken();
     void SaveToken(string token);
+    void DeleteToken();
 }

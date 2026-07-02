@@ -5,4 +5,5 @@ public interface IApiKeyStore
     bool HasApiKey { get; }
     string? GetApiKey();
     void SaveApiKey(string apiKey);
+    void DeleteApiKey();
 }

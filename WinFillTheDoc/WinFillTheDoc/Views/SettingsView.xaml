@@ -1,0 +1,50 @@
+<UserControl x:Class="WinFillTheDoc.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Настройки" FontSize="22" FontWeight="SemiBold" Foreground="#18211D" />
+            <TextBlock Text="API-ключи сохраняются локально и защищаются Windows DPAPI для текущего пользователя." TextWrapping="Wrap" Foreground="#5B665E" Margin="0,8,0,24" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Background="#F4F1EB" CornerRadius="10" Padding="18" Margin="0,0,0,18">
+                    <StackPanel>
+                        <TextBlock Text="OpenAI" FontSize="17" FontWeight="SemiBold" Foreground="#18211D" />
+                        <TextBlock Text="{Binding OpenAiStatus}" Foreground="#5B665E" Margin="0,6,0,12" />
+                        <TextBlock Text="Новый ключ" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding OpenAiApiKey, UpdateSourceTrigger=PropertyChanged}" Padding="9" Margin="0,6,0,12" />
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Сохранить OpenAI ключ" Command="{Binding SaveOpenAiCommand}" Padding="16,8" Margin="0,0,8,0" Background="#1F6B4F" Foreground="White" BorderThickness="0" />
+                            <Button Content="Удалить" Command="{Binding DeleteOpenAiCommand}" Padding="16,8" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#F4F1EB" CornerRadius="10" Padding="18">
+                    <StackPanel>
+                        <TextBlock Text="DaData" FontSize="17" FontWeight="SemiBold" Foreground="#18211D" />
+                        <TextBlock Text="{Binding DaDataStatus}" Foreground="#5B665E" Margin="0,6,0,12" />
+                        <TextBlock Text="Новый ключ" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding DaDataToken, UpdateSourceTrigger=PropertyChanged}" Padding="9" Margin="0,6,0,12" />
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Сохранить DaData ключ" Command="{Binding SaveDaDataCommand}" Padding="16,8" Margin="0,0,8,0" Background="#1F6B4F" Foreground="White" BorderThickness="0" />
+                            <Button Content="Удалить" Command="{Binding DeleteDaDataCommand}" Padding="16,8" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{Binding Message}" Foreground="#1F6B4F" TextWrapping="Wrap" Margin="0,16,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Button Grid.Row="2" Content="Назад" Command="{Binding BackCommand}" HorizontalAlignment="Right" Padding="20,9" Margin="0,20,0,0" />
+    </Grid>
+</UserControl>

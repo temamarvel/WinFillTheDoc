@@ -94,5 +94,6 @@ public sealed class CompanyReferenceValidatorTests
         public bool HasToken => !string.IsNullOrWhiteSpace(_token);
         public string? GetToken() => _token;
         public void SaveToken(string token) => throw new NotSupportedException();
+        public void DeleteToken() => throw new NotSupportedException();
     }
 }

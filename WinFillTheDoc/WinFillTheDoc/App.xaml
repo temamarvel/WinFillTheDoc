@@ -17,5 +17,8 @@
         <DataTemplate DataType="{x:Type viewModels:PlaceholderLibraryViewModel}">
             <views:PlaceholderLibraryView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:SettingsViewModel}">
+            <views:SettingsView />
+        </DataTemplate>
     </Application.Resources>
 </Application>

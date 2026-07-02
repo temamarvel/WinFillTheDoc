@@ -48,6 +48,7 @@ public partial class App : System.Windows.Application
         services.AddTransient<DocumentDataFormViewModel>();
         services.AddTransient<ConfirmationViewModel>();
         services.AddTransient<PlaceholderLibraryViewModel>();
+        services.AddTransient<SettingsViewModel>();
 
         _serviceProvider = services.BuildServiceProvider();
 
