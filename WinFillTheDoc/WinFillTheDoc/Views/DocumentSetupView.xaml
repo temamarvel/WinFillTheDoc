@@ -16,8 +16,20 @@
             <TextBlock Text="DOCX-шаблон *" FontWeight="SemiBold" />
             <DockPanel Margin="0,8,0,20">
                 <Button DockPanel.Dock="Right" Content="Выбрать" Command="{Binding SelectTemplateCommand}" Padding="18,8" Margin="16,0,0,0" />
-                <Border Background="#F4F1EB" CornerRadius="6" Padding="12,9">
-                    <TextBlock Text="{Binding TemplateFileName}" TextTrimming="CharacterEllipsis" />
+                <Border x:Name="TemplateDropZone"
+                        AllowDrop="True"
+                        Background="#F4F1EB"
+                        CornerRadius="6"
+                        Padding="12,9"
+                        BorderBrush="#D7D0C4"
+                        BorderThickness="1"
+                        PreviewDragEnter="OnTemplateDragOver"
+                        PreviewDragOver="OnTemplateDragOver"
+                        PreviewDrop="OnTemplateDrop">
+                    <StackPanel>
+                        <TextBlock Text="{Binding TemplateFileName}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="Перетащите DOCX сюда" FontSize="11" Foreground="#718077" Margin="0,3,0,0" />
+                    </StackPanel>
                 </Border>
             </DockPanel>
             <TextBlock Text="{Binding TemplateStatusMessage}" Foreground="#B42318" TextWrapping="Wrap" Margin="0,-14,0,16">
@@ -36,11 +48,24 @@
             <TextBlock Text="Файл с данными" FontWeight="SemiBold" />
             <DockPanel Margin="0,8,0,0">
                 <Button DockPanel.Dock="Right" Content="Выбрать" Command="{Binding SelectSourceCommand}" Padding="18,8" Margin="16,0,0,0" />
-                <Border Background="#F4F1EB" CornerRadius="6" Padding="12,9">
-                    <TextBlock Text="{Binding SourceFileName}" TextTrimming="CharacterEllipsis" />
+                <Border x:Name="SourceDropZone"
+                        AllowDrop="True"
+                        Background="#F4F1EB"
+                        CornerRadius="6"
+                        Padding="12,9"
+                        BorderBrush="#D7D0C4"
+                        BorderThickness="1"
+                        PreviewDragEnter="OnSourceDragOver"
+                        PreviewDragOver="OnSourceDragOver"
+                        PreviewDrop="OnSourceDrop">
+                    <StackPanel>
+                        <TextBlock Text="{Binding SourceFileName}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="Перетащите TXT, DOCX или PDF сюда" FontSize="11" Foreground="#718077" Margin="0,3,0,0" />
+                    </StackPanel>
                 </Border>
             </DockPanel>
             <TextBlock Text="Поддерживаются TXT, DOCX и текстовые PDF. Для сканов PDF понадобится OCR в отдельном этапе." FontSize="12" Foreground="#718077" Margin="0,8,0,18" />
+            <TextBlock Text="{Binding SourceStatusMessage}" FontSize="12" Foreground="#718077" TextWrapping="Wrap" Margin="0,-10,0,18" />
 
             <Border Background="#F4F1EB" CornerRadius="8" Padding="14" Margin="0,0,0,0">
                 <DockPanel>

@@ -25,7 +25,24 @@
         <StackPanel Grid.Row="1" Margin="0,20,0,8">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Content="Заполнить из файла" Command="{Binding RefillFromSourceCommand}" Padding="16,7" />
-                <TextBlock Text="{Binding ExtractionMessage}" Foreground="#5B665E" TextWrapping="Wrap" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding ExtractionMessage}" TextWrapping="Wrap" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#5B665E" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ExtractionStatusKind}" Value="Success">
+                                    <Setter Property="Foreground" Value="#1F6B4F" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ExtractionStatusKind}" Value="Warning">
+                                    <Setter Property="Foreground" Value="#B54708" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ExtractionStatusKind}" Value="Error">
+                                    <Setter Property="Foreground" Value="#B42318" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </DockPanel>
             <ProgressBar IsIndeterminate="True" Height="4" Margin="0,8,0,0" Visibility="{Binding IsExtracting, Converter={StaticResource BooleanToVisibilityConverter}}" />
             <DockPanel Margin="0,12,0,0">

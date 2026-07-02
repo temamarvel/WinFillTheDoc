@@ -52,7 +52,7 @@
                         </StackPanel>
                         <TextBlock Text="{Binding UpdateStatus}" Foreground="#5B665E" TextWrapping="Wrap" Margin="0,12,0,0" />
                         <TextBlock Text="{Binding UpdateTitle}" FontWeight="SemiBold" Foreground="#18211D" TextWrapping="Wrap" Margin="0,8,0,0" />
-                        <TextBox Text="{Binding UpdateNotes}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" BorderThickness="0" Background="Transparent" Margin="0,8,0,0" MaxHeight="120" />
+                        <TextBox Text="{Binding UpdateNotes, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" BorderThickness="0" Background="Transparent" Margin="0,8,0,0" MaxHeight="120" />
                     </StackPanel>
                 </Border>
 

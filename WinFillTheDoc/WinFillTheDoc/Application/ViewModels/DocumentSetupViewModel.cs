@@ -18,6 +18,7 @@ public sealed class DocumentSetupViewModel : ObservableObject
     private string? _apiKeyStatusMessage;
     private string? _daDataTokenStatusMessage;
     private string? _templateStatusMessage;
+    private string? _sourceStatusMessage;
     private bool _templateHasError;
 
     public DocumentSetupViewModel(
@@ -89,6 +90,12 @@ public sealed class DocumentSetupViewModel : ObservableObject
         private set => SetProperty(ref _templateStatusMessage, value);
     }
 
+    public string? SourceStatusMessage
+    {
+        get => _sourceStatusMessage;
+        private set => SetProperty(ref _sourceStatusMessage, value);
+    }
+
     public bool TemplateHasError
     {
         get => _templateHasError;
@@ -111,9 +118,7 @@ public sealed class DocumentSetupViewModel : ObservableObject
         var filePath = _fileDialogService.SelectTemplateFile();
         if (filePath is null) return;
 
-        TemplatePath = filePath;
-        _workflowState.FieldValues = [];
-        InspectTemplate(filePath);
+        UseTemplateFile(filePath);
     }
 
     private void SelectSource()
@@ -121,9 +126,55 @@ public sealed class DocumentSetupViewModel : ObservableObject
         var filePath = _fileDialogService.SelectSourceFile();
         if (filePath is null) return;
 
-        SourcePath = filePath;
+        UseSourceFile(filePath);
+    }
+
+    public void UseDroppedTemplate(string filePath)
+    {
+        if (!IsDocx(filePath))
+        {
+            TemplateHasError = true;
+            TemplateStatusMessage = "Шаблон должен быть DOCX-файлом.";
+            return;
+        }
+
+        UseTemplateFile(filePath);
+    }
+
+    public void UseDroppedSource(string filePath)
+    {
+        if (!IsSupportedSource(filePath))
+        {
+            SourceStatusMessage = "Файл реквизитов должен быть TXT, DOCX или PDF.";
+            return;
+        }
+
+        UseSourceFile(filePath);
+    }
+
+    public static bool CanDropTemplate(string filePath) => IsDocx(filePath);
+    public static bool CanDropSource(string filePath) => IsSupportedSource(filePath);
+
+    private void UseTemplateFile(string filePath)
+    {
+        TemplatePath = filePath;
+        _workflowState.TemplateFile = new DocumentFile(filePath);
+        _workflowState.FieldValues = [];
         _workflowState.ExtractedValues = new Dictionary<string, string>();
         _workflowState.ExtractionStatusMessage = null;
+        _workflowState.ResolvedValues = new Dictionary<string, string>();
+        InspectTemplate(filePath);
+    }
+
+    private void UseSourceFile(string filePath)
+    {
+        SourcePath = filePath;
+        SourceStatusMessage = "Файл реквизитов выбран.";
+        _workflowState.SourceFile = new DocumentFile(filePath);
+        _workflowState.FieldValues = [];
+        _workflowState.ExtractedValues = new Dictionary<string, string>();
+        _workflowState.ExtractionStatusMessage = null;
+        _workflowState.ResolvedValues = new Dictionary<string, string>();
     }
 
     private void InspectTemplate(string filePath)
@@ -157,5 +208,16 @@ public sealed class DocumentSetupViewModel : ObservableObject
         _workflowState.TemplateFile = new DocumentFile(TemplatePath!);
         _workflowState.SourceFile = SourcePath is null ? null : new DocumentFile(SourcePath);
         _navigationService.NavigateTo<DocumentDataFormViewModel>();
+    }
+
+    private static bool IsDocx(string filePath) =>
+        string.Equals(Path.GetExtension(filePath), ".docx", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsSupportedSource(string filePath)
+    {
+        var extension = Path.GetExtension(filePath);
+        return string.Equals(extension, ".txt", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(extension, ".docx", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase);
     }
 }

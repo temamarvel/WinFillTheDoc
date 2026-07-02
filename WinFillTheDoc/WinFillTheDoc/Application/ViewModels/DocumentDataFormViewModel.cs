@@ -18,6 +18,7 @@ public sealed class DocumentDataFormViewModel : ObservableObject
     private readonly INavigationService _navigationService;
     private string? _validationMessage;
     private string? _extractionMessage;
+    private ExtractionStatusKind _extractionStatusKind;
     private string? _referenceValidationMessage;
     private bool _isExtracting;
     private bool _isCheckingReference;
@@ -80,6 +81,12 @@ public sealed class DocumentDataFormViewModel : ObservableObject
         private set => SetProperty(ref _extractionMessage, value);
     }
 
+    public ExtractionStatusKind ExtractionStatusKind
+    {
+        get => _extractionStatusKind;
+        private set => SetProperty(ref _extractionStatusKind, value);
+    }
+
     public bool IsExtracting
     {
         get => _isExtracting;
@@ -128,16 +135,18 @@ public sealed class DocumentDataFormViewModel : ObservableObject
             var extraction = await _textExtractor.ExtractAsync(_workflowState.SourceFile.FullPath);
             if (string.IsNullOrWhiteSpace(extraction.Text))
             {
-                var reason = extraction.Diagnostics.Errors.FirstOrDefault()
-                    ?? extraction.Diagnostics.Notes.FirstOrDefault()
-                    ?? "Текст не найден.";
-                SetExtractionMessage($"Автозаполнение недоступно: {reason} Заполните форму вручную.");
+                var reason = extraction.NeedsOcr
+                    ? "PDF похож на скан, OCR пока не поддержан."
+                    : extraction.Diagnostics.Errors.FirstOrDefault()
+                      ?? extraction.Diagnostics.Notes.FirstOrDefault()
+                      ?? "Текст не найден.";
+                SetExtractionMessage($"Автозаполнение недоступно: {reason} Заполните форму вручную.", extraction.NeedsOcr ? ExtractionStatusKind.Warning : ExtractionStatusKind.Error);
                 return;
             }
 
             if (!_apiKeyStore.HasApiKey)
             {
-                SetExtractionMessage("Текст из файла извлечён, но OpenAI API-ключ не задан. Заполните форму вручную или вернитесь назад и укажите ключ.");
+                SetExtractionMessage($"Текст извлечён: {extraction.Diagnostics.ProducedChars} символов. OpenAI API-ключ не задан, заполните форму вручную.", ExtractionStatusKind.Warning);
                 return;
             }
 
@@ -151,11 +160,12 @@ public sealed class DocumentDataFormViewModel : ObservableObject
             ApplyExtractedValues(extractedValues);
             SetExtractionMessage(extractedValues.Count == 0
                 ? "OpenAI не нашёл реквизиты в документе. Заполните форму вручную."
-                : $"Автозаполнение выполнено. Найдено полей: {extractedValues.Count}. Проверьте значения перед подтверждением.");
+                : $"Автозаполнение выполнено. Текст извлечён: {extraction.Diagnostics.ProducedChars} символов. Найдено полей: {extractedValues.Count}. Проверьте значения перед подтверждением.",
+                extractedValues.Count == 0 ? ExtractionStatusKind.Warning : ExtractionStatusKind.Success);
         }
         catch (Exception exception)
         {
-            SetExtractionMessage($"Не удалось выполнить автозаполнение: {exception.Message}. Заполните форму вручную.");
+            SetExtractionMessage($"Не удалось выполнить автозаполнение: {exception.Message}. Заполните форму вручную.", ExtractionStatusKind.Error);
         }
         finally
         {
@@ -279,9 +289,10 @@ public sealed class DocumentDataFormViewModel : ObservableObject
         foreach (var field in Fields) field.ApplyReferenceIssue(null);
     }
 
-    private void SetExtractionMessage(string message)
+    private void SetExtractionMessage(string message, ExtractionStatusKind kind)
     {
         ExtractionMessage = message;
+        ExtractionStatusKind = kind;
         _workflowState.ExtractionStatusMessage = message;
     }
 }
