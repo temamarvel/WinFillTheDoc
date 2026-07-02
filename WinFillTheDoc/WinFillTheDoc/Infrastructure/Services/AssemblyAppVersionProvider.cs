@@ -5,8 +5,10 @@ namespace WinFillTheDoc.Infrastructure.Services;
 
 public sealed class AssemblyAppVersionProvider : IAppVersionProvider
 {
-    public string CurrentVersion =>
-        Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3)
-        ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)
+    public string CurrentVersion => GetVersion(Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly());
+
+    public static string GetVersion(Assembly assembly) =>
+        assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+        ?? assembly.GetName().Version?.ToString(3)
         ?? "0.0.0";
 }

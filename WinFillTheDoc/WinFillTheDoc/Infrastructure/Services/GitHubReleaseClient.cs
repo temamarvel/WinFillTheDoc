@@ -7,6 +7,7 @@ namespace WinFillTheDoc.Infrastructure.Services;
 
 public sealed class GitHubReleaseClient : IGitHubReleaseClient
 {
+    public const string LatestReleaseUrl = "https://api.github.com/repos/temamarvel/WinFillTheDoc/releases/latest";
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
     private readonly HttpClient _httpClient;
 
@@ -17,7 +18,7 @@ public sealed class GitHubReleaseClient : IGitHubReleaseClient
 
     public async Task<GitHubRelease> FetchLatestReleaseAsync(CancellationToken cancellationToken = default)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/temamarvel/FillTheDoc/releases/latest");
+        using var request = new HttpRequestMessage(HttpMethod.Get, LatestReleaseUrl);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
         request.Headers.UserAgent.ParseAdd("WinFillTheDoc");

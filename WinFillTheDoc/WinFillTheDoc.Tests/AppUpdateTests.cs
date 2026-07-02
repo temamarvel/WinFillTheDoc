@@ -1,4 +1,6 @@
 using System.Net;
+using System.Reflection;
+using System.Reflection.Emit;
 using NUnit.Framework;
 using WinFillTheDoc.Application.Services;
 using WinFillTheDoc.Infrastructure.Services;
@@ -64,9 +66,23 @@ public sealed class AppUpdateTests
     }
 
     [Test]
+    public void AssemblyAppVersionProvider_ReadsInformationalVersion()
+    {
+        var assemblyName = new AssemblyName($"VersionProviderTestAssembly_{Guid.NewGuid():N}");
+        var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+        var attributeConstructor = typeof(AssemblyInformationalVersionAttribute).GetConstructor([typeof(string)])!;
+        var attribute = new CustomAttributeBuilder(attributeConstructor, ["1.0.1-beta"]);
+        assemblyBuilder.SetCustomAttribute(attribute);
+
+        var version = AssemblyAppVersionProvider.GetVersion(assemblyBuilder);
+
+        Assert.That(version, Is.EqualTo("1.0.1-beta"));
+    }
+
+    [Test]
     public async Task GitHubReleaseClient_ParsesReleaseJson()
     {
-        var client = new GitHubReleaseClient(new HttpClient(new FakeHttpMessageHandler(HttpStatusCode.OK, """
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, """
         {
           "tag_name": "v1.2.0",
           "name": "Release 1.2",
@@ -76,10 +92,12 @@ public sealed class AppUpdateTests
             { "name": "app.msi", "browser_download_url": "https://example.test/app.msi" }
           ]
         }
-        """)));
+        """);
+        var client = new GitHubReleaseClient(new HttpClient(handler));
 
         var release = await client.FetchLatestReleaseAsync();
 
+        Assert.That(handler.LastRequestUri?.ToString(), Is.EqualTo(GitHubReleaseClient.LatestReleaseUrl));
         Assert.That(release.TagName, Is.EqualTo("v1.2.0"));
         Assert.That(release.Assets.Single().Name, Is.EqualTo("app.msi"));
     }
@@ -126,7 +144,12 @@ public sealed class AppUpdateTests
             _content = content;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(_statusCode) { Content = new StringContent(_content) });
+        public Uri? LastRequestUri { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            LastRequestUri = request.RequestUri;
+            return Task.FromResult(new HttpResponseMessage(_statusCode) { Content = new StringContent(_content) });
+        }
     }
 }
